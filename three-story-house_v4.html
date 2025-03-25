@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dreistöckiges Haus - Visualisierung</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            text-align: center;
+            color: #333;
+        }
+        .building {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            margin: 20px 0;
+        }
+        .floor {
+            height: 100px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            border: 2px solid #333;
+            background-color: #e6f7ff;
+        }
+        .floor-label {
+            position: absolute;
+            left: 10px;
+            font-weight: bold;
+        }
+        .people-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 10px;
+            margin-left: 120px;
+        }
+        .count-display {
+            margin-right: 30px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .person {
+            width: 20px;
+            height: 40px;
+            margin: 5px;
+            border-radius: 10px 10px 0 0;
+            position: relative;
+        }
+        .person.base {
+            background-color: #e74c3c; /* Red for base/multiplied people */
+        }
+        .person.additional {
+            /*background-color: #3498db; Blue for additional people */
+			background-color: #14c91f;
+        }
+        .person.base::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 5px;
+            width: 10px;
+            height: 10px;
+            background-color: #e74c3c; /* Red for base/multiplied people */
+            border-radius: 50%;
+        }
+        .person.additional::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 5px;
+            width: 10px;
+            height: 10px;
+            /*background-color: #3498db; Blue for additional people */
+			background-color: #14c91f;
+            border-radius: 50%;
+        }
+        .person-group {
+            display: flex;
+            margin: 5px;
+            padding: 5px;
+            border: 2px solid #888;
+            border-radius: 5px;
+            background-color: rgba(255,255,255,0.3);
+        }
+        .person-group.base {
+            border-color: #3498db; /* Red border for base/multiplied groups */
+            background-color: rgba(231, 76, 60, 0.1);
+        }
+        .person-group.additional {
+            border-color: #3498db; /* Blue border for additional groups */
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .tab-container {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            font-size: 17px;
+        }
+        .tab:hover {
+            background-color: #ddd;
+        }
+        .tab.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .tabcontent {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+            animation: fadeEffect 1s;
+        }
+        @keyframes fadeEffect {
+            from {opacity: 0;}
+            to {opacity: 1;}
+        }
+        .current-scenario {
+            background-color: #f0f8ff;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            border: 1px solid #d0e3ff;
+        }
+        .scenario {
+            margin: 10px 0;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .scenario:hover {
+            background-color: #e6f7ff;
+        }
+        .scenario.active {
+            background-color: #d0e3ff;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 80%;
+            margin: 20px 0;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .solution {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f1f1f1;
+            border-radius: 5px;
+            display: none;
+        }
+		.person-group.removed {
+			border-color: #45a049;
+			border-style: dashed;
+			background-color: rgba(231, 76, 60, 0.05);
+		}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dreistöckiges Haus - Visualisierung</h1>
+        
+        <div class="tab-container">
+            <button class="tab active" onclick="openTab(event, 'Visualisierung')">Visualisierung</button>
+            <button class="tab" onclick="openTab(event, 'Szenarien')">Szenarien</button>
+        </div>
+        
+        <div id="Visualisierung" class="tabcontent" style="display: block;">
+            <div class="current-scenario">
+                <h3>Aktuelles Szenario: <span id="current-scenario-name">I</span></h3>
+                <p id="current-scenario-description">Im Erdgeschoss sind doppelt so viele Gäste wie im Dachgeschoss. Im ersten Stock sind dreimal so viele wie im Dachgeschoss.</p>
+            </div>
+            
+            <div class="building">
+                <div class="floor" id="dachgeschoss">
+                    <span class="floor-label">Dachgeschoss</span>
+                    <div class="people-container" id="dachgeschoss-people"></div>
+                    <div class="count-display"><span id="dachgeschoss-count">2</span> Personen</div>
+                </div>
+                <div class="floor" id="erster-stock">
+                    <span class="floor-label">Erster Stock</span>
+                    <div class="people-container" id="erster-stock-people"></div>
+                    <div class="count-display"><span id="erster-stock-count">6</span> Personen</div>
+                </div>
+                <div class="floor" id="Erdgeschoss">
+                    <span class="floor-label">Erdgeschoss</span>
+                    <div class="people-container" id="Erdgeschoss-people"></div>
+                    <div class="count-display"><span id="Erdgeschoss-count">4</span> Personen</div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <p>Bewege den Schieberegler, um die Anzahl der Personen zu ändern:</p>
+                <input type="range" id="people-slider" min="1" max="10" value="2">
+                
+                <div>
+                    <p><strong>Gesamt:</strong> <span id="total-count">12</span> Personen</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="Szenarien" class="tabcontent">
+            <h2>Wähle ein Szenario</h2>
+            <div class="scenario active" data-scenario="1">
+                <strong>I.</strong> Im Erdgeschoss sind doppelt so viele Gäste wie im Dachgeschoss. Im ersten Stock sind dreimal so viele wie im Dachgeschoss.
+            </div>
+            <div class="scenario" data-scenario="2">
+                <strong>II.</strong> Im ersten Stock sind vier Gäste mehr als im Erdgeschoss. Im Dachgeschoss sind zwei Gäste mehr als im Erdgeschoss.
+            </div>
+            <div class="scenario" data-scenario="3">
+                <strong>III.</strong> Im ersten Stock sind vier Gäste mehr als im Erdgeschoss. Im Dachgeschoss sind doppelt so viele Gäste wie im Erdgeschoss.
+            </div>
+            <div class="scenario" data-scenario="4">
+                <strong>IV.</strong> Im Erdgeschoss sind dreimal so viele Gäste wie im ersten Stock. Im Dachgeschoss sind zwei Gäste mehr als im ersten Stock.
+            </div>
+            <div class="scenario" data-scenario="5">
+                <strong>V.</strong> Im Erdgeschoss sind viermal so viele Gäste wie im Dachgeschoss. Im ersten Stock sind dreimal so viele wie im Dachgeschoss.
+            </div>
+            <div class="scenario" data-scenario="6">
+                <strong>VI.</strong> Im ersten Stock sind dreimal so viele wie im Erdgeschoss. Im Dachgeschoss sind zwei Gäste mehr als im Erdgeschoss.
+            </div>
+            <div class="scenario" data-scenario="7">
+                <strong>VII.</strong> Im Erdgeschoss sind doppelt so viele Gäste wie im ersten Stock. Im Dachgeschoss sind drei Gäste weniger als im ersten Stock.
+            </div>
+			<div class="scenario" data-scenario="8">
+				<strong>VIII.</strong> Im ersten Stock sind 2 mehr als im Erdgeschoss. Im Dachgeschoss sind doppelt so viele wie im ersten Stock.
+			</div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const slider = document.getElementById('people-slider');
+        const dachgeschossCount = document.getElementById('dachgeschoss-count');
+        const ersterStockCount = document.getElementById('erster-stock-count');
+        const ErdgeschossCount = document.getElementById('Erdgeschoss-count');
+        const totalCount = document.getElementById('total-count');
+        const dachgeschossPeople = document.getElementById('dachgeschoss-people');
+        const ersterStockPeople = document.getElementById('erster-stock-people');
+        const ErdgeschossPeople = document.getElementById('Erdgeschoss-people');
+        const solutionButton = document.getElementById('show-solution');
+        const solution = document.getElementById('solution');
+        const solutionContent = document.getElementById('solution-content');
+        const scenarioElements = document.querySelectorAll('.scenario');
+        const currentScenarioName = document.getElementById('current-scenario-name');
+        const currentScenarioDescription = document.getElementById('current-scenario-description');
+        
+        // Define scenarios
+        const scenarios = {
+            1: {
+                name: "I",
+                description: "Im Erdgeschoss sind doppelt so viele Gäste wie im Dachgeschoss. Im ersten Stock sind dreimal so viele wie im Dachgeschoss.",
+                calculate: (base) => {
+                    const dachgeschoss = base;
+                    const ersterStock = dachgeschoss * 3;
+                    const Erdgeschoss = dachgeschoss * 2;
+                    return { 
+                        dachgeschoss, 
+                        ersterStock, 
+                        Erdgeschoss,
+                        multipliers: {
+                            dachgeschoss: 1,
+                            ersterStock: 3,
+                            Erdgeschoss: 2
+                        },
+                        base: {
+                            dachgeschoss: base,
+                            ersterStock: base,
+                            Erdgeschoss: base
+                        },
+                        additions: {
+                            dachgeschoss: 0,
+                            ersterStock: 0,
+                            Erdgeschoss: 0
+                        }
+                    };
+                }
+            },
+            2: {
+                name: "II",
+                description: "Im ersten Stock sind vier Gäste mehr als im Erdgeschoss. Im Dachgeschoss sind zwei Gäste mehr als im Erdgeschoss.",
+                calculate: (base) => {
+                    const Erdgeschoss = base;
+                    const ersterStock = Erdgeschoss + 4;
+                    const dachgeschoss = Erdgeschoss + 2;
+                    return { 
+                        dachgeschoss, 
+                        ersterStock, 
+                        Erdgeschoss,
+                        multipliers: {
+                            dachgeschoss: 1,
+                            ersterStock: 1,
+                            Erdgeschoss: 1
+                        },
+                        base: {
+                            dachgeschoss: base,
+                            ersterStock: base,
+                            Erdgeschoss: base
+                        },
+                        additions: {
+                            dachgeschoss: 2,
+                            ersterStock: 4,
+                            Erdgeschoss: 0
+                        }
+                    };
+                }
+            },
+            3: {
+                name: "III",
+                description: "Im ersten Stock sind vier Gäste mehr als im Erdgeschoss. Im Dachgeschoss sind doppelt so viele Gäste wie im Erdgeschoss.",
+                calculate: (base) => {
+                    const Erdgeschoss = base;
+                    const ersterStock = Erdgeschoss + 4;
+                    const dachgeschoss = Erdgeschoss * 2;
+                    return { 
+                        dachgeschoss, 
+                        ersterStock, 
+                        Erdgeschoss,
+                        multipliers: {
+                            dachgeschoss: 2,
+                            ersterStock: 1,
+                            Erdgeschoss: 1
+                        },
+                        base: {
+                            dachgeschoss: base,
+                            ersterStock: base,
+                            Erdgeschoss: base
+                        },
+                        additions: {
+                            dachgeschoss: 0,
+                            ersterStock: 4,
+                            Erdgeschoss: 0
+                        }
+                    };
+                }
+            },
+            4: {
+                name: "IV",
+                description: "Im Erdgeschoss sind dreimal so viele Gäste wie im ersten Stock. Im Dachgeschoss sind zwei Gäste mehr als im ersten Stock.",
+                calculate: (base) => {
+					const ersterStock = base;
+                    const Erdgeschoss = ersterStock * 3;
+                    const dachgeschoss = ersterStock + 2;
+                    return { 
+                        dachgeschoss, 
+                        ersterStock, 
+                        Erdgeschoss,
+                        multipliers: {
+                            dachgeschoss: 1,
+                            ersterStock: 1,
+                            Erdgeschoss: 3
+                        },
+                        base: {
+                            dachgeschoss: base,
+                            ersterStock: base,
+                            Erdgeschoss: base
+                        },
+                        additions: {
+                            dachgeschoss: 2,
+                            ersterStock: 0,
+                            Erdgeschoss: 0
+                        }
+                    };
+                }
+            },
+            5: {
+                name: "V",
+                description: "Im Erdgeschoss sind viermal so viele Gäste wie im Dachgeschoss. Im ersten Stock sind dreimal so viele wie im Dachgeschoss.",
+                calculate: (base) => {
+                    const dachgeschoss = base;
+                    const Erdgeschoss = dachgeschoss * 4;
+                    const ersterStock = dachgeschoss * 3;
+                    return { 
+                        dachgeschoss, 
+                        ersterStock, 
+                        Erdgeschoss,
+                        multipliers: {
+                            dachgeschoss: 1,
+                            ersterStock: 3,
+                            Erdgeschoss: 4
+                        },
+                        base: {
+                            dachgeschoss: base,
+                            ersterStock: base,
+                            Erdgeschoss: base
+                        },
+                        additions: {
+                            dachgeschoss: 0,
+                            ersterStock: 0,
+                            Erdgeschoss: 0
+                        }
+                    };
+                }
+            },
+            6: {
+                name: "VI",
+                description: "Im ersten Stock sind dreimal so viele wie im Erdgeschoss. Im Dachgeschoss sind zwei Gäste mehr als im Erdgeschoss.",
+                calculate: (base) => {
+                    const Erdgeschoss = base;
+                    const ersterStock = Erdgeschoss * 3;
+                    const dachgeschoss = Erdgeschoss + 2;
+                    return { 
+                        dachgeschoss, 
+                        ersterStock, 
+                        Erdgeschoss,
+                        multipliers: {
+                            dachgeschoss: 1,
+                            ersterStock: 3,
+                            Erdgeschoss: 1
+                        },
+                        base: {
+                            dachgeschoss: base,
+                            ersterStock: base,
+                            Erdgeschoss: base
+                        },
+                        additions: {
+                            dachgeschoss: 2,
+                            ersterStock: 0,
+                            Erdgeschoss: 0
+                        }
+                    };
+                }
+            },
+            7: {
+                name: "VII",
+				showGhosts: true,
+                description: "Im Erdgeschoss sind doppelt so viele Gäste wie im ersten Stock. Im Dachgeschoss sind drei Gäste weniger als im ersten Stock.",
+                calculate: (base) => {
+                    const ersterStock = base;
+                    const Erdgeschoss = ersterStock * 2;
+                    const dachgeschoss = ersterStock - 3;
+                    return { 
+                        dachgeschoss, 
+                        ersterStock, 
+                        Erdgeschoss,
+                        multipliers: {
+                            dachgeschoss: 1,
+                            ersterStock: 1,
+                            Erdgeschoss: 2
+                        },
+                        base: {
+                            dachgeschoss: base - 3,
+                            ersterStock: base,
+                            Erdgeschoss: base
+                        },
+                        additions: {
+                            dachgeschoss: 0,
+                            ersterStock: 0,
+                            Erdgeschoss: 0
+                        }
+                    };
+                }
+            },
+			8: {
+				name: "VIII",
+				description: "Im ersten Stock sind 2 mehr als im Erdgeschoss. Im Dachgeschoss sind doppelt so viele wie im ersten Stock.",
+				calculate: (base) => {
+					const Erdgeschoss = base;
+					const ersterStock = Erdgeschoss + 2;
+					const dachgeschoss = ersterStock * 2;
+					
+					return { 
+						dachgeschoss, 
+						ersterStock, 
+						Erdgeschoss,
+						multipliers: {
+							dachgeschoss: 1,
+							ersterStock: 1,
+							Erdgeschoss: 1
+						},
+						base: {
+							dachgeschoss: ersterStock,
+							ersterStock: Erdgeschoss,
+							Erdgeschoss: Erdgeschoss
+						},
+						additions: {
+							dachgeschoss: ersterStock,  // Hier fügen wir ersterStock auch als additions hinzu
+							ersterStock: 2,
+							Erdgeschoss: 0
+						},
+						// Spezielles Flag für dieses Szenario
+						specialCase: true
+					};
+				}
+			}
+        };
+        
+        let currentScenario = scenarios[1];
+        
+        // Function to create a person element
+        function createPerson(isAdditional = false) {
+            const person = document.createElement('div');
+            person.className = isAdditional ? 'person additional' : 'person base';
+            return person;
+        }
+
+        // Function to create a group of people
+        function createPeopleGroup(count, isAdditional = false) {
+            if (count <= 0) return null;
+            
+            const group = document.createElement('div');
+            group.className = isAdditional ? 'person-group additional' : 'person-group base';
+            
+            for (let i = 0; i < count && i < 20; i++) {
+                group.appendChild(createPerson(isAdditional));
+            }
+            
+            return group;
+        }
+        
+        // Function to update the visualization
+        function updateVisualization() {
+            const baseValue = parseInt(slider.value);
+            const values = currentScenario.calculate(baseValue);
+            
+            dachgeschossCount.textContent = values.dachgeschoss;
+            ersterStockCount.textContent = values.ersterStock;
+            ErdgeschossCount.textContent = values.Erdgeschoss;
+            totalCount.textContent = values.dachgeschoss + values.ersterStock + values.Erdgeschoss;
+            
+            // Clear previous people
+            dachgeschossPeople.innerHTML = '';
+            ersterStockPeople.innerHTML = '';
+            ErdgeschossPeople.innerHTML = '';
+            
+            // Add people to dachgeschoss
+			if (values.specialCase) {
+				// Basisgruppe vom ersten Stock (rot)
+				const baseGroup1 = createPeopleGroup(values.base.ersterStock, false);
+				if (baseGroup1) dachgeschossPeople.appendChild(baseGroup1);
+				
+				// Noch einmal als Duplikat
+				const baseGroup2 = createPeopleGroup(values.base.ersterStock, false);
+				if (baseGroup2) dachgeschossPeople.appendChild(baseGroup2);
+				
+				// Zusatzgruppe vom ersten Stock (blau)
+				const additionalGroup1 = createPeopleGroup(values.additions.ersterStock, true);
+				if (additionalGroup1) dachgeschossPeople.appendChild(additionalGroup1);
+				
+
+				
+				const additionalGroup2 = createPeopleGroup(values.additions.ersterStock, true);
+				if (additionalGroup2) dachgeschossPeople.appendChild(additionalGroup2);
+			} else{
+				if (values.multipliers.dachgeschoss > 1) {
+					for (let i = 0; i < values.multipliers.dachgeschoss; i++) {
+						const group = createPeopleGroup(values.base.dachgeschoss, false);
+						if (group) dachgeschossPeople.appendChild(group);
+					}
+				} else {
+					const baseGroup = createPeopleGroup(values.base.dachgeschoss, false);
+					if (baseGroup) dachgeschossPeople.appendChild(baseGroup);
+				}
+				
+				if (values.additions.dachgeschoss > 0) {
+					const additionalGroup = createPeopleGroup(values.additions.dachgeschoss, true);
+					if (additionalGroup) dachgeschossPeople.appendChild(additionalGroup);
+				}
+			}
+			
+			if (currentScenario.name === "VII") {
+				// Den letzten baseGroup im Dachgeschoss finden
+				const baseGroup = dachgeschossPeople.querySelector('.person-group.base');
+				
+				if (baseGroup) {
+					// Klasse ändern, um den gestrichelten Rand zu zeigen
+					baseGroup.classList.add('removed');
+					
+					// Drei "Geister-Personen" zum baseGroup hinzufügen
+					for (let i = 0; i < 3; i++) {
+						const ghost = document.createElement('div');
+						ghost.className = 'person base';
+						ghost.style.opacity = '0.4';
+						ghost.style.border = '2px dashed #e74c3c';
+						ghost.style.backgroundColor = 'transparent';
+						baseGroup.appendChild(ghost);
+					}
+				}
+			}
+            
+            // Add people to erster stock
+            if (values.multipliers.ersterStock > 1) {
+                for (let i = 0; i < values.multipliers.ersterStock; i++) {
+                    const group = createPeopleGroup(values.base.ersterStock, false);
+                    if (group) ersterStockPeople.appendChild(group);
+                }
+            } else {
+                const baseGroup = createPeopleGroup(values.base.ersterStock, false);
+                if (baseGroup) ersterStockPeople.appendChild(baseGroup);
+            }
+            
+            if (values.additions.ersterStock > 0) {
+                const additionalGroup = createPeopleGroup(values.additions.ersterStock, true);
+                if (additionalGroup) ersterStockPeople.appendChild(additionalGroup);
+            }
+            
+            // Add people to Erdgeschoss
+            if (values.multipliers.Erdgeschoss > 1) {
+                for (let i = 0; i < values.multipliers.Erdgeschoss; i++) {
+                    const group = createPeopleGroup(values.base.Erdgeschoss, false);
+                    if (group) ErdgeschossPeople.appendChild(group);
+                }
+            } else {
+                const baseGroup = createPeopleGroup(values.base.Erdgeschoss, false);
+                if (baseGroup) ErdgeschossPeople.appendChild(baseGroup);
+            }
+            
+            if (values.additions.Erdgeschoss > 0) {
+                const additionalGroup = createPeopleGroup(values.additions.Erdgeschoss, true);
+                if (additionalGroup) ErdgeschossPeople.appendChild(additionalGroup);
+            }
+        }
+        
+        // Tab functionality
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tab");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+        
+        // Event listeners
+        slider.addEventListener('input', updateVisualization);
+        
+        // Scenario selection
+        scenarioElements.forEach(element => {
+            element.addEventListener('click', function() {
+                const scenarioId = this.getAttribute('data-scenario');
+                currentScenario = scenarios[scenarioId];
+                
+                // Update active state
+                scenarioElements.forEach(el => el.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Update display
+                currentScenarioName.textContent = currentScenario.name;
+                currentScenarioDescription.textContent = currentScenario.description;
+                
+                // Switch to visualization tab
+                document.querySelector('.tab[onclick*="Visualisierung"]').click();
+                
+                // Update visualization
+                updateVisualization();
+            });
+        });
+        
+        // Initialize visualization
+        updateVisualization();
+    </script>
+</body>
+</html>
